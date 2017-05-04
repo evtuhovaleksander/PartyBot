@@ -54,7 +54,7 @@ def send_message_to_all(bot, update, text):
     if sender.is_VIP:
         receivers = TelegramUser.get_all_users()
         for receiver in receivers:
-            bot.sendMessage(chat_id=receiver.user_telegram_id, text=text)
+            bot.sendMessage(chat_id=receiver.user_telegram_id, text=text,disable_web_page_prewview=True)
     else:
         bot.sendMessage(chat_id=message.chat_id,
                         text="Вы не можете использовать данную функцию, обратитесь к администратору")
@@ -125,10 +125,10 @@ def send_message_by_week_day(bot, update):
 
         if event_col == 0:
             message = 'На ' + week_day_dict[int(week_day.value)] + ' мероприятий не запланировано'
-            bot.sendMessage(chat_id=update.message.chat_id, text=message)
+            bot.sendMessage(chat_id=update.message.chat_id, text=message,disable_web_page_prewview=True)
         else:
 
-            #BotMessage.delete_old_messages(bot=bot, update=update, events=events,message=update.message)
+            # BotMessage.delete_old_messages(bot=bot, update=update, events=events,message=update.message)
             for i in range(0, event_col):
                 event = events[i]
 
@@ -172,7 +172,7 @@ def send_message_top(bot, update):
             bot.sendMessage(chat_id=update.message.chat_id, text=message)
         else:
 
-            #BotMessage.delete_old_messages(bot=bot, update=update, events=events_only,message=update.message)
+            # BotMessage.delete_old_messages(bot=bot, update=update, events=events_only,message=update.message)
             for i in range(0, event_col):
                 event = events[i][1]
                 week_day_id = events[i][0]
@@ -213,16 +213,16 @@ def send_advetrisments(bot, update):
             bot.sendMessage(chat_id=update.message.chat_id, text=message, disable_notification=True)
         else:
 
-            #bot.sendMessage(chat_id=update.message.chat_id, text='*Акции*\n\n', parse_mode=ParseMode.MARKDOWN)
+            # bot.sendMessage(chat_id=update.message.chat_id, text='*Акции*\n\n', parse_mode=ParseMode.MARKDOWN)
             for i in range(0, advertisment_col):
                 # bot.sendMessage(chat_id=update.message.chat_id, text=advertisments[i].text, parse_mode=ParseMode.MARKDOWN)
                 if i != (advertisment_col - 1):
                     bot.sendMessage(chat_id=update.message.chat_id, text=advertisments[i].text,
-                                    parse_mode=ParseMode.MARKDOWN, disable_notification=True)
+                                    parse_mode=ParseMode.MARKDOWN, disable_notification=True,disable_web_page_prewview=True)
                     time.sleep(1)
                 else:
                     bot.sendMessage(chat_id=update.message.chat_id, text=advertisments[i].text,
-                                    parse_mode=ParseMode.MARKDOWN)
+                                    parse_mode=ParseMode.MARKDOWN,disable_web_page_prewview=True)
 
 
     except KeyError as k_e:
@@ -274,16 +274,14 @@ def button(bot, update):
 
                 bot.editMessageText(text='Рассылка выполнена', chat_id=update.callback_query.message.chat_id,
                                     message_id=update.callback_query.message.message_id,
-                                    parse_mode=ParseMode.MARKDOWN)
+                                    parse_mode=ParseMode.MARKDOWN,disable_web_page_prewview=True)
                 send_message_to_all(bot=bot, update=update, text=text)
             else:
                 bot.editMessageText(text='Рассылка отменена', chat_id=update.callback_query.message.chat_id,
                                     message_id=update.callback_query.message.message_id,
-                                    parse_mode=ParseMode.MARKDOWN)
+                                    parse_mode=ParseMode.MARKDOWN,disable_web_page_prewview=True)
         else:
             event = Event.get_event(query_data_tuple[0])
-
-
 
             if query_data_tuple[1] == 1:
                 type = True
@@ -301,7 +299,7 @@ def button(bot, update):
             bot.editMessageText(text=message, chat_id=query.message.chat_id, message_id=query.message.message_id,
                                 parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
 
-            BotMessage.delete_old_messages(bot=bot,events=event,message=update.callback_query.message)
+            BotMessage.delete_old_messages(bot=bot, events=event, message=update.callback_query.message)
 
 
     except Exception as ex:
@@ -340,10 +338,10 @@ def command(bot, update):
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
                 bot.sendMessage(text='Отправить всем следующее сообщение?\n' + text, chat_id=update.message.chat_id,
-                                parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+                                parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup,disable_web_page_prewview=True)
             else:
                 bot.sendMessage(chat_id=update.message.chat_id,
-                                text="Вы не можете использовать данную функцию, обратитесь к администратору")
+                                text="Вы не можете использовать данную функцию, обратитесь к администратору",disable_web_page_prewview=True)
 
         else:
             func = command_dict[update.message.text]
@@ -354,15 +352,6 @@ def command(bot, update):
     except Exception as ex:
         print(ex)
         bot.sendMessage(chat_id=update.message.chat_id, text="System error")
-
-
-def work_cycle():
-     try:
-         updater.start_polling()
-         time.sleep(10)
-     except Exception as ex:
-         print('bot crashed:')
-         work_cycle()
 
 
 command_handler = MessageHandler(Filters.command, command)
@@ -376,11 +365,17 @@ dispatcher.add_handler(echo_handler)
 
 updater.dispatcher.add_handler(CallbackQueryHandler(button))
 
-while True:
-    print('new poling')
-    try:
-        updater.start_polling()
-        time.sleep(10)
-    except Exception as ex:
-        print('bot crashed:')
 
+def work_cycle():
+    while True:
+        try:
+            updater.start_polling()
+            time.sleep(10)
+        except Exception as ex:
+            print('bot crashed:')
+
+
+from multiprocessing import Process
+
+t1 = Process(target=work_cycle)
+t1.start()

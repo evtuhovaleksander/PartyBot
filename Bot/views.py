@@ -26,9 +26,9 @@ def week(request):
 
 
 @login_required
-def day(request, num):
+def day(request, num, flag=True):
     actives = Day.get_day_and_events(num, False)
-    return render(request, 'day.html', {'actives': actives, 'num': num})
+    return render(request, 'day.html', {'actives': actives, 'num': num, 'flag': flag})
 
 
 @login_required
@@ -44,14 +44,16 @@ def add_event(request, num):
         elif is_free == "false":
             is_free = False
         Event.add_event(header=header, description=description, is_free=is_free, num=num)
-        return redirect('day', num=num)
+        actives = Day.get_day_and_events(num, False)
+        return render(request, 'day.html', {'actives': actives, 'num': num, 'flag': True})
 
 
 @login_required
 def edit_event(request, id, num):
     if request.method == 'GET':
         event = get_object_or_404(Event, id=id)
-        return render(request, 'edit_event.html', {'event': event})
+        actives = Day.get_day_and_events(num, False)
+        return render(request, 'day.html', {'actives': actives, 'num': num, 'flag': False, 'event': event})
     elif request.method == 'POST':
         header = request.POST['header']
         description = request.POST['description']
@@ -61,13 +63,14 @@ def edit_event(request, id, num):
         elif is_free == "false":
             is_free = False
         Event.objects.filter(id=id).update(header=header, description=description, is_free=is_free)
-        return redirect('day', num=num)
+        actives = Day.get_day_and_events(num, False)
+        return render(request, 'day.html', {'actives': actives, 'num': num, 'flag': True})
 
 
 @login_required
 def delete_event(request, id, num):
-        Event.objects.filter(id=id).delete()
-        return redirect('day', num=num)
+    Event.objects.filter(id=id).update(deleted=True)
+    return redirect('day', num=num)
 
 
 @login_required
@@ -92,7 +95,9 @@ def change_vip(request, user_telegram_id):
 @login_required
 def delete_all_event(request, num):
     events = Event.get_all_events_by_day(num)
-    events.delete()
+    for event in events:
+        event.deleted = True
+        event.save()
     return redirect('day', num=num)
 
 
@@ -109,14 +114,14 @@ def add_advertisement(request):
     elif request.method == 'POST':
         text = request.POST['text']
         Advertisement.add_advertisement(text)
-    return redirect('list_advertisement')
+    return redirect('add_advertisement')
 
 
 @login_required
 def edit_advertisement(request, id):
     if request.method == 'GET':
         advertisement = get_object_or_404(Advertisement, id=id)
-        return render(request, 'advertisement.html', {'advertisement':advertisement})
+        return render(request, 'advertisement.html', {'advertisement': advertisement})
     elif request.method == 'POST':
         text = request.POST['text']
         advertisement = Advertisement.objects.get(id=id)
@@ -130,6 +135,3 @@ def delete_advertisement(request, id):
     advertisement = get_object_or_404(Advertisement, id=id)
     advertisement.delete()
     return redirect('list_advertisement')
-
-
-
